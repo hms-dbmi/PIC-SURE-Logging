@@ -42,6 +42,18 @@ public class AuditLogService {
             putIfNotNull(fields, "action", event.action());
             putIfNotNull(fields, "client_type", event.clientType());
 
+            // 2a. Caller: prefer top-level field, fall back to metadata for old clients
+            String caller = event.caller();
+            if ((caller == null || caller.isBlank()) && event.metadata() != null) {
+                Object metaCaller = event.metadata().get("caller");
+                if (metaCaller != null) {
+                    caller = metaCaller.toString();
+                }
+            }
+            if (caller != null && !caller.isBlank()) {
+                fields.put("caller", truncate(caller));
+            }
+
             // 2b. Session ID: prefer top-level field, fall back to metadata for old clients
             String sessionId = event.sessionId();
             if ((sessionId == null || sessionId.isBlank()) && event.metadata() != null) {
@@ -72,6 +84,7 @@ public class AuditLogService {
                 // Strip session_id from metadata since it is now a top-level field
                 LinkedHashMap<String, Object> filteredMetadata = new LinkedHashMap<>(event.metadata());
                 filteredMetadata.remove("session_id");
+                filteredMetadata.remove("caller");
                 if (!filteredMetadata.isEmpty()) {
                     fields.put("metadata", filteredMetadata);
                 }

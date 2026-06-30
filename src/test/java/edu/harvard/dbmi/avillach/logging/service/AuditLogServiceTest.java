@@ -280,4 +280,52 @@ class AuditLogServiceTest {
         // metadata map should be omitted since it's empty after removing session_id
         assertFalse(message.contains("metadata="));
     }
+
+    @Test
+    void callerFromTopLevelField() {
+        AuditEvent event = new AuditEvent("TEST", null, null, "PYTHON_ADAPTER", null, null, null, null);
+
+        service.logEvent(event, null, null);
+
+        assertEquals(1, listAppender.list.size());
+        String message = listAppender.list.get(0).getFormattedMessage();
+        assertTrue(message.contains("caller=PYTHON_ADAPTER"));
+    }
+
+    @Test
+    void callerFallbackFromMetadata() {
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("caller", "R_ADAPTER"), null);
+
+        service.logEvent(event, null, null);
+
+        assertEquals(1, listAppender.list.size());
+        String message = listAppender.list.get(0).getFormattedMessage();
+        assertTrue(message.contains("caller=R_ADAPTER"));
+    }
+
+    @Test
+    void callerTopLevelTakesPrecedenceOverMetadata() {
+        AuditEvent event = new AuditEvent("TEST", null, null, "top-caller", null, null, Map.of("caller", "meta-caller"), null);
+
+        service.logEvent(event, null, null);
+
+        assertEquals(1, listAppender.list.size());
+        String message = listAppender.list.get(0).getFormattedMessage();
+        assertTrue(message.contains("caller=top-caller"));
+        assertFalse(message.contains("caller=meta-caller"));
+    }
+
+    @Test
+    void callerStrippedFromMetadataInOutput() {
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("caller", "c1", "other_key", "val"), null);
+
+        service.logEvent(event, null, null);
+
+        assertEquals(1, listAppender.list.size());
+        String message = listAppender.list.get(0).getFormattedMessage();
+        // caller should appear at top level
+        assertTrue(message.contains("caller=c1"));
+        // other_key should still be in metadata
+        assertTrue(message.contains("other_key=val"));
+    }
 }
