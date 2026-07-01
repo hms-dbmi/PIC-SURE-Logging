@@ -78,7 +78,6 @@ public class AuditLogService {
                 // Strip session_id from metadata since it is now a top-level field
                 LinkedHashMap<String, Object> filteredMetadata = new LinkedHashMap<>(event.metadata());
                 filteredMetadata.remove("session_id");
-                filteredMetadata.remove("caller");
                 if (!filteredMetadata.isEmpty()) {
                     fields.put("metadata", filteredMetadata);
                 }
