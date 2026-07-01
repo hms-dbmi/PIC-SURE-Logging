@@ -42,7 +42,6 @@ public class AuditLogService {
             putIfNotNull(fields, "action", event.action());
             putIfNotNull(fields, "client_type", event.clientType());
 
-            // 2a. Caller: prefer top-level field, fall back to metadata for old clients
             String caller = event.caller();
             if (caller != null && !caller.isBlank()) {
                 fields.put("caller", truncate(caller));
