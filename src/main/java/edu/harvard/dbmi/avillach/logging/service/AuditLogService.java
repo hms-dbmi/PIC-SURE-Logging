@@ -44,12 +44,6 @@ public class AuditLogService {
 
             // 2a. Caller: prefer top-level field, fall back to metadata for old clients
             String caller = event.caller();
-            if ((caller == null || caller.isBlank()) && event.metadata() != null) {
-                Object metaCaller = event.metadata().get("caller");
-                if (metaCaller != null) {
-                    caller = metaCaller.toString();
-                }
-            }
             if (caller != null && !caller.isBlank()) {
                 fields.put("caller", truncate(caller));
             }
