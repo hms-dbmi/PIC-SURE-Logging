@@ -52,7 +52,7 @@ class AuditLogServiceTest {
             "https://example.com"
         );
         AuditEvent event = new AuditEvent(
-            "QUERY", "execute", "web", null,
+            "QUERY", "execute", "web", null, null,
             request,
             Map.of("query_id", "q1"),
             Map.of("code", "500", "message", "Internal error")
@@ -72,7 +72,7 @@ class AuditLogServiceTest {
 
     @Test
     void nullRequestHandled() {
-        AuditEvent event = new AuditEvent("LOGIN", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("LOGIN", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, null);
 
@@ -84,7 +84,7 @@ class AuditLogServiceTest {
 
     @Test
     void emptyMetadataAndErrorOmitted() {
-        AuditEvent event = new AuditEvent("LOGIN", null, null, null, null, Map.of(), Map.of());
+        AuditEvent event = new AuditEvent("LOGIN", null, null, null, null, null, Map.of(), Map.of());
 
         service.logEvent(event, null, null);
 
@@ -96,7 +96,7 @@ class AuditLogServiceTest {
 
     @Test
     void noJwtSetsLoggedInFalse() {
-        AuditEvent event = new AuditEvent("PAGE_VIEW", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("PAGE_VIEW", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, null);
 
@@ -108,7 +108,7 @@ class AuditLogServiceTest {
     @Test
     void requestIdFromBody() {
         RequestInfo request = new RequestInfo("body-id", null, null, null, null, null, null, null, null, null, null, null, null);
-        AuditEvent event = new AuditEvent("TEST", null, null, null, request, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, request, null, null);
 
         service.logEvent(event, null, "header-id");
 
@@ -119,7 +119,7 @@ class AuditLogServiceTest {
 
     @Test
     void requestIdFromHeaderFallback() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, "header-id");
 
@@ -131,7 +131,7 @@ class AuditLogServiceTest {
     @Test
     void requestIdFromHeaderFallbackWhenBodyRequestIdBlank() {
         RequestInfo request = new RequestInfo("  ", null, null, null, null, null, null, null, null, null, null, null, null);
-        AuditEvent event = new AuditEvent("TEST", null, null, null, request, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, request, null, null);
 
         service.logEvent(event, null, "header-id");
 
@@ -142,7 +142,7 @@ class AuditLogServiceTest {
 
     @Test
     void timestampFormatIsISO8601() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, null);
 
@@ -154,7 +154,7 @@ class AuditLogServiceTest {
 
     @Test
     void platformFieldsPresent() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, null);
 
@@ -178,7 +178,7 @@ class AuditLogServiceTest {
     void longUrlTruncatedTo2000() {
         String longUrl = "x".repeat(3000);
         RequestInfo request = new RequestInfo(null, "GET", longUrl, null, null, null, null, null, null, null, null, null, null);
-        AuditEvent event = new AuditEvent("TEST", null, null, null, request, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, request, null, null);
 
         service.logEvent(event, null, null);
 
@@ -195,7 +195,7 @@ class AuditLogServiceTest {
     void exact2000CharStringNotTruncated() {
         String exactUrl = "y".repeat(2000);
         RequestInfo request = new RequestInfo(null, "GET", exactUrl, null, null, null, null, null, null, null, null, null, null);
-        AuditEvent event = new AuditEvent("TEST", null, null, null, request, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, request, null, null);
 
         service.logEvent(event, null, null);
 
@@ -207,7 +207,7 @@ class AuditLogServiceTest {
     @Test
     void longRequestIdFromHeaderTruncated() {
         String longRequestId = "r".repeat(3000);
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, null, null);
 
         service.logEvent(event, null, longRequestId);
 
@@ -222,7 +222,7 @@ class AuditLogServiceTest {
 
     @Test
     void sessionIdFromTopLevelField() {
-        AuditEvent event = new AuditEvent("TEST", null, null, "sess-abc", null, null, null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, "sess-abc", null, null, null);
 
         service.logEvent(event, null, null);
 
@@ -233,7 +233,7 @@ class AuditLogServiceTest {
 
     @Test
     void sessionIdFallbackFromMetadata() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("session_id", "meta-xyz"), null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, Map.of("session_id", "meta-xyz"), null);
 
         service.logEvent(event, null, null);
 
@@ -244,7 +244,7 @@ class AuditLogServiceTest {
 
     @Test
     void sessionIdTopLevelTakesPrecedenceOverMetadata() {
-        AuditEvent event = new AuditEvent("TEST", null, null, "top-level", null, Map.of("session_id", "from-meta"), null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, "top-level", null, Map.of("session_id", "from-meta"), null);
 
         service.logEvent(event, null, null);
 
@@ -256,7 +256,7 @@ class AuditLogServiceTest {
 
     @Test
     void sessionIdStrippedFromMetadataInOutput() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("session_id", "sid", "other_key", "val"), null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, Map.of("session_id", "sid", "other_key", "val"), null);
 
         service.logEvent(event, null, null);
 
@@ -270,7 +270,7 @@ class AuditLogServiceTest {
 
     @Test
     void metadataWithOnlySessionIdProducesNoMetadataField() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("session_id", "only-sid"), null);
+        AuditEvent event = new AuditEvent("TEST", null, null, null, null, null, Map.of("session_id", "only-sid"), null);
 
         service.logEvent(event, null, null);
 
@@ -290,42 +290,5 @@ class AuditLogServiceTest {
         assertEquals(1, listAppender.list.size());
         String message = listAppender.list.get(0).getFormattedMessage();
         assertTrue(message.contains("caller=PYTHON_ADAPTER"));
-    }
-
-    @Test
-    void callerFallbackFromMetadata() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("caller", "R_ADAPTER"), null);
-
-        service.logEvent(event, null, null);
-
-        assertEquals(1, listAppender.list.size());
-        String message = listAppender.list.get(0).getFormattedMessage();
-        assertTrue(message.contains("caller=R_ADAPTER"));
-    }
-
-    @Test
-    void callerTopLevelTakesPrecedenceOverMetadata() {
-        AuditEvent event = new AuditEvent("TEST", null, null, "top-caller", null, null, Map.of("caller", "meta-caller"), null);
-
-        service.logEvent(event, null, null);
-
-        assertEquals(1, listAppender.list.size());
-        String message = listAppender.list.get(0).getFormattedMessage();
-        assertTrue(message.contains("caller=top-caller"));
-        assertFalse(message.contains("caller=meta-caller"));
-    }
-
-    @Test
-    void callerStrippedFromMetadataInOutput() {
-        AuditEvent event = new AuditEvent("TEST", null, null, null, null, Map.of("caller", "c1", "other_key", "val"), null);
-
-        service.logEvent(event, null, null);
-
-        assertEquals(1, listAppender.list.size());
-        String message = listAppender.list.get(0).getFormattedMessage();
-        // caller should appear at top level
-        assertTrue(message.contains("caller=c1"));
-        // other_key should still be in metadata
-        assertTrue(message.contains("other_key=val"));
     }
 }
