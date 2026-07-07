@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Contract pin for the Javalin-native {@code GET /health} route (Phase 3 Task 8).
+ * Contract pin for the Javalin-native {@code GET /health} route.
  *
  * <p>The gateway's system-status aggregation probes this endpoint directly (this service is
  * Javalin, not Spring Boot, so there is no Actuator {@code status:UP} body here). The contract
