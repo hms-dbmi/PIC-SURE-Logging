@@ -177,6 +177,51 @@ class RequestSizeLimitFilterTest {
             .hasMessageContaining("exceeds");
     }
 
+    @Test
+    void chunkedBodyAtExactlyTheCapIsReadWholeOneByteAtATime() throws Exception {
+        // Pins count == limit through the single-byte read() override: pins the exact boundary
+        // the arithmetic must not trip on when using the no-arg read() path.
+        byte[] payload = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES];
+        HttpServletRequest request = chunkedRequest(payload);
+
+        int[] count = new int[1];
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            ServletInputStream in = wrapped.getInputStream();
+            int b;
+            while ((b = in.read()) != -1) {
+                count[0]++;
+            }
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(count[0]).isEqualTo((int) RequestSizeLimitFilter.MAX_REQUEST_BYTES);
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void chunkedBodyOneByteOverTheCapIsRejectedOnNoArgRead() throws Exception {
+        // Pins count == limit + 1 through the same single-byte read() override.
+        byte[] oversized = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES + 1];
+        HttpServletRequest request = chunkedRequest(oversized);
+
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            ServletInputStream in = wrapped.getInputStream();
+            int b;
+            while ((b = in.read()) != -1) {
+                // Just consume the stream
+            }
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, chain))
+            .isInstanceOf(RequestBodyTooLargeException.class)
+            .hasMessageContaining("exceeds");
+    }
+
     private HttpServletRequest chunkedRequest(byte[] body) throws IOException {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getContentLengthLong()).thenReturn(-1L);
