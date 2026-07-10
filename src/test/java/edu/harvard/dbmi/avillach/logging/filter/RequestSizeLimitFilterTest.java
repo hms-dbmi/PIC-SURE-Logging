@@ -110,6 +110,73 @@ class RequestSizeLimitFilterTest {
         assertThat(response.getStatus()).isEqualTo(200);
     }
 
+    @Test
+    void chunkedBodyAtExactlyTheCapIsReadWhole() throws Exception {
+        // Pins count == limit through the bulk read(byte[], int, int) override that readAllBytes()
+        // exercises: this is the exact boundary the arithmetic must not trip on.
+        byte[] payload = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES];
+        HttpServletRequest request = chunkedRequest(payload);
+
+        byte[][] seen = new byte[1][];
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            seen[0] = wrapped.getInputStream().readAllBytes();
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(seen[0]).hasSize((int) RequestSizeLimitFilter.MAX_REQUEST_BYTES);
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void chunkedBodyOneByteOverTheCapIsRejected() throws Exception {
+        // Pins count == limit + 1 through the same bulk read override.
+        byte[] oversized = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES + 1];
+        HttpServletRequest request = chunkedRequest(oversized);
+
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            wrapped.getInputStream().readAllBytes();
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, chain))
+            .isInstanceOf(RequestBodyTooLargeException.class)
+            .hasMessageContaining("exceeds");
+    }
+
+    @Test
+    void getInputStreamReturnsTheSameCountingStreamEachCall() throws Exception {
+        // One byte over the cap in total, split across two reads from two getInputStream() calls.
+        // Neither half alone crosses the limit; if the counter weren't shared, neither read would
+        // trip it and the cap would be defeated.
+        int firstReadSize = 600_000;
+        byte[] payload = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES + 1];
+        HttpServletRequest request = chunkedRequest(payload);
+
+        HttpServletRequest[] wrappedHolder = new HttpServletRequest[1];
+        doAnswer((Answer<Void>) invocation -> {
+            wrappedHolder[0] = invocation.getArgument(0);
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        filter.doFilter(request, response, chain);
+        HttpServletRequest wrapped = wrappedHolder[0];
+
+        ServletInputStream first = wrapped.getInputStream();
+        byte[] firstChunk = first.readNBytes(firstReadSize);
+        assertThat(firstChunk).hasSize(firstReadSize);
+
+        ServletInputStream second = wrapped.getInputStream();
+        assertThat(second).isSameAs(first);
+
+        assertThatThrownBy(second::readAllBytes)
+            .isInstanceOf(RequestBodyTooLargeException.class)
+            .hasMessageContaining("exceeds");
+    }
+
     private HttpServletRequest chunkedRequest(byte[] body) throws IOException {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getContentLengthLong()).thenReturn(-1L);

@@ -62,6 +62,9 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
         private final long maxBytes;
 
+        // Memoized so every caller shares one running count instead of each resetting to zero.
+        private ServletInputStream countingStream;
+
         CountingRequestWrapper(HttpServletRequest request, long maxBytes) {
             super(request);
             this.maxBytes = maxBytes;
@@ -69,8 +72,13 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
         @Override
         public ServletInputStream getInputStream() throws IOException {
-            ServletInputStream delegate = super.getInputStream();
-            long limit = maxBytes;
+            if (countingStream == null) {
+                countingStream = newCountingStream(super.getInputStream(), maxBytes);
+            }
+            return countingStream;
+        }
+
+        private static ServletInputStream newCountingStream(ServletInputStream delegate, long limit) {
             return new ServletInputStream() {
 
                 private long count;
