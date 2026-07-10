@@ -1,6 +1,7 @@
 package edu.harvard.dbmi.avillach.logging.config;
 
 import edu.harvard.dbmi.avillach.logging.filter.ApiKeyAuthFilter;
+import edu.harvard.dbmi.avillach.logging.filter.RequestSizeLimitFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,16 @@ public class FilterConfig {
             new FilterRegistrationBean<>(new ApiKeyAuthFilter(properties.apiKey()));
         registration.addUrlPatterns("/audit");
         registration.setOrder(1);
+        return registration;
+    }
+
+    /** Order 2: runs after the API key check, so an unauthenticated oversized body gets 401, not 413. */
+    @Bean
+    public FilterRegistrationBean<RequestSizeLimitFilter> requestSizeLimitFilterRegistration() {
+        FilterRegistrationBean<RequestSizeLimitFilter> registration =
+            new FilterRegistrationBean<>(new RequestSizeLimitFilter(RequestSizeLimitFilter.MAX_REQUEST_BYTES));
+        registration.addUrlPatterns("/audit");
+        registration.setOrder(2);
         return registration;
     }
 }
