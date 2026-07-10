@@ -8,4 +8,6 @@ RUN mkdir -p /app/logs
 EXPOSE 80
 # No HEALTHCHECK: the base image has no wget/curl, and gateway/operations-service
 # carry none either. Health is polled externally via GET /health.
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app/app.jar"]
+# exec makes java PID 1 in every shell, so SIGTERM reaches the JVM and Spring's
+# graceful shutdown (server.shutdown: graceful) actually runs.
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -jar /app/app.jar"]
