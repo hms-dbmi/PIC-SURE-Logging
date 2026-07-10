@@ -41,7 +41,7 @@ pipeline {
             -v "$MOUNT_PATH/:/app:Z" \
             -v maven_m2_cache:/root/.m2 \
             -w /app \
-            maven:3.9-amazoncorretto-25 \
+            maven:3.9.16-amazoncorretto-25 \
             sh -lc "mvn clean install -B -T 1C -DskipTests"
 
           ls -lah target || true
