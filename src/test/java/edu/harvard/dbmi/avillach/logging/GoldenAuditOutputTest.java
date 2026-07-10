@@ -165,6 +165,7 @@ class GoldenAuditOutputTest {
         assertThat(json.get("http_user_agent").asText()).isEqualTo("Mozilla/5.0");
         assertThat(json.get("http_content_type").asText()).isEqualTo("application/json");
         assertThat(json.get("status").isNumber()).isTrue();
+        assertThat(json.get("status").asInt()).isEqualTo(200);
         assertThat(json.get("bytes").asLong()).isEqualTo(1024L);
         assertThat(json.get("duration").asLong()).isEqualTo(150L);
         assertThat(json.get("referrer").asText()).isEqualTo("https://example.com");

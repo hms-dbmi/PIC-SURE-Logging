@@ -71,6 +71,7 @@ class ApiKeyAuthFilterTest {
 
         filter.doFilter(request, response, chain);
 
+        verify(chain, never()).doFilter(request, response);
         assertThat(response.getStatus()).isEqualTo(401);
     }
 

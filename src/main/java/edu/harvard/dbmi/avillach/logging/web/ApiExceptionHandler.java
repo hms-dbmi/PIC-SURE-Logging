@@ -11,8 +11,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.util.Map;
 
 /**
- * Handles only what reaches DispatcherServlet. 401 and 413 are produced by
- * FilterRegistrationBean filters, which run outside MVC and write their own responses.
+ * Handles only what reaches DispatcherServlet. 401 and the declared-Content-Length 413 are
+ * written by FilterRegistrationBean filters, which run outside MVC and write their own
+ * responses. The chunked-body 413 is different: it arrives here as
+ * RequestBodyTooLargeException, thrown during {@code @RequestBody} argument resolution.
  *
  * <p>Extends ResponseEntityExceptionHandler deliberately. ExceptionHandlerExceptionResolver
  * runs before DefaultHandlerExceptionResolver, so a bare @ExceptionHandler(Exception.class)

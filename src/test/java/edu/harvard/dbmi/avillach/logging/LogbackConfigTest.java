@@ -6,9 +6,12 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.status.Status;
+import net.logstash.logback.encoder.LogstashEncoder;
+import net.logstash.logback.fieldnames.LogstashFieldNames;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -284,6 +287,43 @@ class LogbackConfigTest {
         Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
         AsyncAppender asyncAppender = findAppender(rootLogger, "ASYNC_APP_FILE");
         assertTrue(asyncAppender.isNeverBlock());
+    }
+
+    // --- Console appender tests (the actual stdout channel Splunk parses) ---
+
+    @Test
+    void auditLoggerHasConsoleAppenderTargetingSystemOut() {
+        Logger auditLogger = context.getLogger("AUDIT");
+        ConsoleAppender<ILoggingEvent> appender = findAppender(auditLogger, "AUDIT_JSON");
+        assertNotNull(appender, "AUDIT logger should have AUDIT_JSON console appender");
+        assertEquals("System.out", appender.getTarget());
+    }
+
+    @Test
+    void auditJsonEncoderIsLogstashEncoderWithAllStandardFieldsIgnored() {
+        Logger auditLogger = context.getLogger("AUDIT");
+        ConsoleAppender<ILoggingEvent> appender = findAppender(auditLogger, "AUDIT_JSON");
+        assertNotNull(appender, "AUDIT logger should have AUDIT_JSON console appender");
+
+        assertInstanceOf(LogstashEncoder.class, appender.getEncoder());
+        LogstashEncoder encoder = (LogstashEncoder) appender.getEncoder();
+        LogstashFieldNames names = encoder.getFieldNames();
+
+        assertEquals("[ignore]", names.getVersion(), "version field must be suppressed");
+        assertEquals("[ignore]", names.getLevelValue(), "levelValue field must be suppressed");
+        assertEquals("[ignore]", names.getThread(), "thread field must be suppressed");
+        assertEquals("[ignore]", names.getLevel(), "level field must be suppressed");
+        assertEquals("[ignore]", names.getLogger(), "logger field must be suppressed");
+        assertEquals("[ignore]", names.getMessage(), "message field must be suppressed");
+        assertEquals("[ignore]", names.getTimestamp(), "timestamp field must be suppressed");
+    }
+
+    @Test
+    void rootLoggerHasConsoleAppenderTargetingSystemErr() {
+        Logger rootLogger = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        ConsoleAppender<ILoggingEvent> appender = findAppender(rootLogger, "APP_STDERR");
+        assertNotNull(appender, "Root logger should have APP_STDERR console appender");
+        assertEquals("System.err", appender.getTarget());
     }
 
     // --- Helper ---

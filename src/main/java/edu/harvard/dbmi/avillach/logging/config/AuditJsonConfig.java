@@ -13,8 +13,12 @@ public class AuditJsonConfig {
     private static final int MAX_STRING_LENGTH = 10_240;
 
     /**
-     * A dedicated mapper for parsing /audit bodies. Deliberately not Spring's global
-     * ObjectMapper: these constraints must never affect response serialization.
+     * A dedicated mapper for parsing /audit bodies. Declaring an ObjectMapper bean here
+     * trips Boot's JacksonAutoConfiguration @ConditionalOnMissingBean, so Boot backs off
+     * and this bean becomes the sole ObjectMapper in the context, including the one
+     * MappingJackson2HttpMessageConverter uses for response serialization. That is safe:
+     * StreamReadConstraints govern reading only, so responses are unaffected, and the only
+     * other Jackson read path (AuditController) qualifies this bean explicitly by name.
      */
     @Bean("auditObjectMapper")
     public ObjectMapper auditObjectMapper() {
