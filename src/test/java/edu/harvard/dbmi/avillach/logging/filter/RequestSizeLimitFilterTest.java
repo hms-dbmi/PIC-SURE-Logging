@@ -11,6 +11,7 @@ import org.mockito.stubbing.Answer;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -220,6 +221,50 @@ class RequestSizeLimitFilterTest {
         assertThatThrownBy(() -> filter.doFilter(request, response, chain))
             .isInstanceOf(RequestBodyTooLargeException.class)
             .hasMessageContaining("exceeds");
+    }
+
+    @Test
+    void chunkedBodyOverTheCapIsRejectedWhenReadViaGetReader() throws Exception {
+        // getReader() must route through the same counting stream as getInputStream();
+        // otherwise a Reader-based consumer bypasses the cap entirely.
+        byte[] oversized = new byte[(int) RequestSizeLimitFilter.MAX_REQUEST_BYTES + 1024];
+        HttpServletRequest request = chunkedRequest(oversized);
+
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            BufferedReader reader = wrapped.getReader();
+            char[] buffer = new char[8192];
+            while (reader.read(buffer) != -1) {
+                // Just consume the stream
+            }
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        assertThatThrownBy(() -> filter.doFilter(request, response, chain))
+            .isInstanceOf(RequestBodyTooLargeException.class)
+            .hasMessageContaining("exceeds");
+    }
+
+    @Test
+    void chunkedBodyUnderTheCapIsReadWholeViaGetReader() throws Exception {
+        byte[] payload = "{\"event_type\":\"TEST\"}".getBytes(StandardCharsets.UTF_8);
+        HttpServletRequest request = chunkedRequest(payload);
+
+        StringBuilder seen = new StringBuilder();
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            BufferedReader reader = wrapped.getReader();
+            int c;
+            while ((c = reader.read()) != -1) {
+                seen.append((char) c);
+            }
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(seen.toString()).isEqualTo("{\"event_type\":\"TEST\"}");
+        assertThat(response.getStatus()).isEqualTo(200);
     }
 
     private HttpServletRequest chunkedRequest(byte[] body) throws IOException {

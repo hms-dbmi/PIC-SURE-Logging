@@ -12,7 +12,10 @@ import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -64,6 +67,8 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
         // Memoized so every caller shares one running count instead of each resetting to zero.
         private ServletInputStream countingStream;
+        // Memoized for the same reason as countingStream: one shared running count.
+        private BufferedReader reader;
 
         CountingRequestWrapper(HttpServletRequest request, long maxBytes) {
             super(request);
@@ -76,6 +81,20 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
                 countingStream = newCountingStream(super.getInputStream(), maxBytes);
             }
             return countingStream;
+        }
+
+        /**
+         * Routes character-based reads through the same counting stream, so the cap
+         * holds whichever of getInputStream()/getReader() a consumer picks.
+         */
+        @Override
+        public BufferedReader getReader() throws IOException {
+            if (reader == null) {
+                String encoding = getCharacterEncoding();
+                Charset charset = (encoding != null) ? Charset.forName(encoding) : StandardCharsets.ISO_8859_1;
+                reader = new BufferedReader(new InputStreamReader(getInputStream(), charset));
+            }
+            return reader;
         }
 
         private static ServletInputStream newCountingStream(ServletInputStream delegate, long limit) {
