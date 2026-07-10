@@ -1,5 +1,6 @@
 package edu.harvard.dbmi.avillach.logging.filter;
 
+import edu.harvard.dbmi.avillach.logging.web.RequestBodyTooLargeException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -84,9 +85,29 @@ class RequestSizeLimitFilterTest {
             return null;
         }).when(chain).doFilter(any(), any());
 
+        // Unchecked on purpose: an IOException would be rewrapped as
+        // HttpMessageNotReadableException by Spring's argument resolver, yielding 400 not 413.
         assertThatThrownBy(() -> filter.doFilter(request, response, chain))
-            .isInstanceOf(IOException.class)
+            .isInstanceOf(RequestBodyTooLargeException.class)
             .hasMessageContaining("exceeds");
+    }
+
+    @Test
+    void chunkedBodyUnderTheCapIsReadWhole() throws Exception {
+        byte[] payload = new byte[1024];
+        HttpServletRequest request = chunkedRequest(payload);
+
+        byte[][] seen = new byte[1][];
+        doAnswer((Answer<Void>) invocation -> {
+            HttpServletRequest wrapped = invocation.getArgument(0);
+            seen[0] = wrapped.getInputStream().readAllBytes();
+            return null;
+        }).when(chain).doFilter(any(), any());
+
+        filter.doFilter(request, response, chain);
+
+        assertThat(seen[0]).hasSize(1024);
+        assertThat(response.getStatus()).isEqualTo(200);
     }
 
     private HttpServletRequest chunkedRequest(byte[] body) throws IOException {

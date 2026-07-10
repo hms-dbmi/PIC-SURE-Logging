@@ -1,5 +1,6 @@
 package edu.harvard.dbmi.avillach.logging.filter;
 
+import edu.harvard.dbmi.avillach.logging.web.RequestBodyTooLargeException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -78,9 +79,18 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
                 public int read() throws IOException {
                     int b = delegate.read();
                     if (b != -1 && ++count > limit) {
-                        throw new IOException("Request body exceeds " + limit + " bytes");
+                        throw new RequestBodyTooLargeException("Request body exceeds " + limit + " bytes");
                     }
                     return b;
+                }
+
+                @Override
+                public int read(byte[] b, int off, int len) throws IOException {
+                    int n = delegate.read(b, off, len);
+                    if (n > 0 && (count += n) > limit) {
+                        throw new RequestBodyTooLargeException("Request body exceeds " + limit + " bytes");
+                    }
+                    return n;
                 }
 
                 @Override public boolean isFinished() { return delegate.isFinished(); }
