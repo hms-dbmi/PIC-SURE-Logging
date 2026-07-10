@@ -12,8 +12,7 @@
     <name>PIC-SURE Audit Logging Service</name>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javalin.version>6.7.0</javalin.version>
         <jackson.version>2.17.2</jackson.version>
@@ -22,7 +21,10 @@
         <logback.version>1.5.29</logback.version>
         <logstash-logback-encoder.version>8.1</logstash-logback-encoder.version>
         <junit.version>5.10.3</junit.version>
-        <mockito.version>5.14.2</mockito.version>
+        <!-- 5.18.0 is the floor for JDK 25. 5.14.2's Byte Buddy rejects class-file v69,
+             and 5.17.0 (what Spring Boot 3.5.9 manages) fails to instrument. Task 3 keeps
+             this property to override the Spring BOM. -->
+        <mockito.version>5.18.0</mockito.version>
     </properties>
 
     <dependencies>
