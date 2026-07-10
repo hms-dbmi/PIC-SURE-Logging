@@ -239,7 +239,6 @@ PIC-SURE-Logging/
     ├── config/
     │   ├── LoggingProperties.java      # @ConfigurationProperties, fail-fast validation
     │   ├── JwtClaimMappingConverter.java # JWT_CLAIM_MAPPING parsing + default map
-    │   ├── AuditJsonConfig.java        # Hardened ObjectMapper for /audit bodies
     │   ├── BeanConfig.java             # Service beans
     │   ├── WebConfig.java              # CORS
     │   └── FilterConfig.java           # Filter registrations and ordering

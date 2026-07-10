@@ -1,9 +1,10 @@
 package edu.harvard.dbmi.avillach.logging.web;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.harvard.dbmi.avillach.logging.model.AuditEvent;
 import edu.harvard.dbmi.avillach.logging.service.AuditLogService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,16 +19,27 @@ public class AuditController {
 
     private static final int MAX_METADATA_KEYS = 50;
     private static final int MAX_ERROR_KEYS = 20;
+    private static final int MAX_NESTING_DEPTH = 10;
+    private static final int MAX_STRING_LENGTH = 10_240;
+
+    /**
+     * Hardened mapper for parsing /audit bodies. Deliberately NOT a Spring bean: an
+     * ObjectMapper bean trips JacksonAutoConfiguration's @ConditionalOnMissingBean and
+     * would replace Boot's auto-configured mapper (JavaTimeModule and all) for every
+     * response in the context. StreamReadConstraints govern reading only, and this is
+     * the service's sole hand-rolled Jackson read path.
+     */
+    private static final ObjectMapper AUDIT_MAPPER = new ObjectMapper(JsonFactory.builder()
+        .streamReadConstraints(StreamReadConstraints.builder()
+            .maxNestingDepth(MAX_NESTING_DEPTH)
+            .maxStringLength(MAX_STRING_LENGTH)
+            .build())
+        .build());
 
     private final AuditLogService auditLogService;
-    private final ObjectMapper objectMapper;
 
-    public AuditController(
-        AuditLogService auditLogService,
-        @Qualifier("auditObjectMapper") ObjectMapper objectMapper
-    ) {
+    public AuditController(AuditLogService auditLogService) {
         this.auditLogService = auditLogService;
-        this.objectMapper = objectMapper;
     }
 
     /**
@@ -42,7 +54,7 @@ public class AuditController {
     ) {
         AuditEvent event;
         try {
-            event = objectMapper.readValue(body, AuditEvent.class);
+            event = AUDIT_MAPPER.readValue(body, AuditEvent.class);
         } catch (Exception e) {
             throw new BadRequestException("Invalid JSON: " + e.getMessage());
         }
