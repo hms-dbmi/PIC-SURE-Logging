@@ -27,8 +27,12 @@ class StdoutPurityTest {
 
         try (ConfigurableApplicationContext ignored = new SpringApplicationBuilder(LoggingServiceApplication.class)
             .web(WebApplicationType.NONE)
-            .properties("picsure.logging.api-key=test-key")
-            .run()) {
+            // Must be a command-line arg, NOT .properties(...). SpringApplicationBuilder.properties()
+            // populates `defaultProperties`, the LOWEST-precedence source, which loses to
+            // application.yml's `${LOGGING_API_KEY:}` -> "" and fails the context with
+            // "LOGGING_API_KEY environment variable is required". Command-line args outrank
+            // application.yml.
+            .run("--picsure.logging.api-key=test-key")) {
             // starting the context is the whole exercise
         } finally {
             System.setOut(original);
