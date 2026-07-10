@@ -32,7 +32,7 @@ public record LoggingProperties(
         environment = defaultIfBlank(environment, "unknown");
         hostname = defaultIfBlank(hostname, systemHostname());
         allowedOrigin = defaultIfBlank(allowedOrigin, "*");
-        jwtClaimMapping = (jwtClaimMapping == null || jwtClaimMapping.isEmpty())
+        jwtClaimMapping = (jwtClaimMapping == null)
             ? JwtClaimMappingConverter.DEFAULT_MAPPING
             : Map.copyOf(jwtClaimMapping);
     }

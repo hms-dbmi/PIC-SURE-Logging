@@ -33,6 +33,14 @@ class JwtClaimMappingConverterTest {
     }
 
     @Test
+    void emptyJsonObjectYieldsAnEmptyMap() {
+        Map<String, String> mapping = converter.convert("{}");
+
+        assertThat(mapping).isEmpty();
+        assertThat(mapping).isNotEqualTo(JwtClaimMappingConverter.DEFAULT_MAPPING);
+    }
+
+    @Test
     void invalidJsonFailsFastWithTheVariableName() {
         assertThatThrownBy(() -> converter.convert("not-json"))
             .isInstanceOf(IllegalStateException.class)

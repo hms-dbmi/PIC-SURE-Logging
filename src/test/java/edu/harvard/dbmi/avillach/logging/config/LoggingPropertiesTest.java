@@ -50,4 +50,13 @@ class LoggingPropertiesTest {
         assertThat(props.allowedOrigin()).isEqualTo("https://example.com");
         assertThat(props.jwtClaimMapping()).isEqualTo(Map.of("a", "b"));
     }
+
+    @Test
+    void explicitlyEmptyMappingIsHonoured() {
+        LoggingProperties props = new LoggingProperties(
+            "k", null, null, null, null, null, Map.of());
+
+        assertThat(props.jwtClaimMapping()).isEmpty();
+        assertThat(props.jwtClaimMapping()).isNotEqualTo(JwtClaimMappingConverter.DEFAULT_MAPPING);
+    }
 }
