@@ -36,8 +36,8 @@ class LogbackConfigTest {
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext(context);
 
-        try (InputStream is = getClass().getResourceAsStream("/logback.xml")) {
-            assertNotNull(is, "logback.xml must be on the classpath");
+        try (InputStream is = getClass().getResourceAsStream("/logback-spring.xml")) {
+            assertNotNull(is, "logback-spring.xml must be on the classpath");
             configurator.doConfigure(is);
         }
         context.start();

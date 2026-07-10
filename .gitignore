@@ -12,4 +12,3 @@ logs/
 *.swp
 *.swo
 .env
-dependency-reduced-pom.xml

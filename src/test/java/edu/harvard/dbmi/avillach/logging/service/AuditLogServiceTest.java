@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import edu.harvard.dbmi.avillach.logging.TestJwtBuilder;
-import edu.harvard.dbmi.avillach.logging.config.AppConfig;
+import edu.harvard.dbmi.avillach.logging.config.LoggingProperties;
 import edu.harvard.dbmi.avillach.logging.model.AuditEvent;
 import edu.harvard.dbmi.avillach.logging.model.RequestInfo;
 import org.junit.jupiter.api.AfterEach;
@@ -24,9 +24,8 @@ class AuditLogServiceTest {
 
     @BeforeEach
     void setUp() {
-        AppConfig config = new AppConfig(
-            "test-key", "myapp", "myplatform", "staging", "myhost",
-            8080, "*",
+        LoggingProperties config = new LoggingProperties(
+            "test-key", "myapp", "myplatform", "staging", "myhost", "*",
             Map.of("sub", "subject", "email", "user_email", "roles", "roles", "logged_in", "logged_in")
         );
         JwtDecodeService jwtService = new JwtDecodeService(config.jwtClaimMapping());
