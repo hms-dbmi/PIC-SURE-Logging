@@ -38,10 +38,17 @@ public class JwtClaimMappingConverter implements Converter<String, Map<String, S
         if (source.isBlank()) {
             return DEFAULT_MAPPING;
         }
+        Map<String, String> parsed;
         try {
-            return MAPPER.readValue(source, new TypeReference<Map<String, String>>() {});
+            parsed = MAPPER.readValue(source, new TypeReference<Map<String, String>>() {});
         } catch (Exception e) {
             throw new IllegalStateException("JWT_CLAIM_MAPPING must be valid JSON object, got: " + source, e);
         }
+        // Fail here with the variable's name; otherwise Map.copyOf in LoggingProperties
+        // dies later with a bare NullPointerException that names nothing.
+        if (parsed.containsValue(null)) {
+            throw new IllegalStateException("JWT_CLAIM_MAPPING must not contain null values, got: " + source);
+        }
+        return parsed;
     }
 }

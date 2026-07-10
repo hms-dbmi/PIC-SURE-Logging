@@ -46,4 +46,12 @@ class JwtClaimMappingConverterTest {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("JWT_CLAIM_MAPPING");
     }
+
+    @Test
+    void nullJsonValueFailsFastWithTheVariableName() {
+        assertThatThrownBy(() -> converter.convert("{\"sub\":null}"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("JWT_CLAIM_MAPPING")
+            .hasMessageContaining("null");
+    }
 }
